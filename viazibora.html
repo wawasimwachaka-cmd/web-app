@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViaziBora — Potato Sales Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --earth:#2C1810;--soil:#5C3317;--tuber:#C8803C;--gold:#E8A84B;
+    --cream:#FDF6E3;--leaf:#3D6B35;--leaf-light:#5A9B4E;
+    --text:#1A0F0A;--muted:#7A6355;--danger:#C0392B;
+    --card-bg:rgba(255,255,255,0.87);--shadow:0 4px 32px rgba(44,24,16,0.10);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse at 15% 20%,rgba(200,128,60,.12) 0%,transparent 50%),
+      radial-gradient(ellipse at 85% 80%,rgba(61,107,53,.10) 0%,transparent 50%)}
+
+  /* LOGIN */
+  #login-screen{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--earth)}
+  .login-box{background:var(--cream);border-radius:24px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.4);animation:slideUp .4s ease}
+  .login-logo{font-size:54px;margin-bottom:8px}
+  .login-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--earth)}
+  .login-sub{font-size:13px;color:var(--muted);margin:4px 0 28px}
+  .login-owners{display:flex;flex-direction:column;gap:12px}
+  .login-divider{font-size:12px;color:var(--muted);margin:4px 0}
+  .owner-btn{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;border:2px solid rgba(44,24,16,.12);background:#fff;cursor:pointer;transition:all .2s;text-align:left}
+  .owner-btn:hover{border-color:var(--tuber);background:rgba(200,128,60,.04);transform:translateX(4px)}
+  .ov{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+  .ob-name{font-weight:700;font-size:15px;color:var(--earth)}
+  .ob-role{font-size:12px;color:var(--muted)}
+  .sync-badge{margin-top:22px;padding:10px 16px;border-radius:10px;background:rgba(61,107,53,.10);font-size:12px;color:var(--leaf);font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+
+  /* SIDEBAR */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--earth);display:flex;flex-direction:column;z-index:100;box-shadow:4px 0 24px rgba(44,24,16,.25)}
+  .sidebar-logo{padding:22px 22px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .logo-mark{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:42px;height:42px;background:var(--tuber);border-radius:50% 40% 50% 40%;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .logo-text{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--cream);line-height:1.1}
+  .logo-sub{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px}
+  .sidebar-nav{flex:1;padding:14px 0}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;color:rgba(253,246,227,.6);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+  .nav-item:hover{color:var(--cream);background:rgba(255,255,255,.05)}
+  .nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(232,168,75,.10)}
+  .nav-icon{font-size:17px;width:22px;text-align:center}
+  .sidebar-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08)}
+  .cu-badge{display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(255,255,255,.07);border-radius:12px;margin-bottom:8px}
+  .cu-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+  .cu-name{font-size:12px;color:var(--cream);font-weight:600}
+  .cu-role{font-size:10px;color:var(--muted)}
+  .sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.4);padding:5px 0}
+  .sdot{width:7px;height:7px;border-radius:50%;background:var(--leaf);animation:pulse 2s infinite;flex-shrink:0}
+  .sdot.syncing{background:var(--gold);animation:spin .9s linear infinite;border-radius:2px}
+  .sdot.error{background:var(--danger);animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .btn-logout{width:100%;padding:8px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+  .btn-logout:hover{background:rgba(192,57,43,.2);color:#e74c3c}
+
+  /* MAIN */
+  .main{margin-left:240px;padding:28px 32px;position:relative;z-index:1;min-height:100vh}
+  .page{display:none}
+  .page.active{display:block}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+  .page-title{font-family:'Playfair Display',serif;font-size:30px;font-weight:900;color:var(--earth)}
+  .page-subtitle{font-size:13px;color:var(--muted);margin-top:3px}
+  .header-actions{display:flex;gap:10px;align-items:center}
+
+  /* BUTTONS */
+  .btn{padding:10px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+  .btn-primary{background:var(--tuber);color:#fff;box-shadow:0 2px 12px rgba(200,128,60,.35)}
+  .btn-primary:hover{background:var(--soil);transform:translateY(-1px)}
+  .btn-success{background:var(--leaf);color:#fff;box-shadow:0 2px 12px rgba(61,107,53,.35)}
+  .btn-success:hover{background:#2E5228;transform:translateY(-1px)}
+  .btn-outline{background:transparent;color:var(--earth);border:1.5px solid rgba(44,24,16,.2)}
+  .btn-outline:hover{border-color:var(--tuber);color:var(--tuber)}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-sm{padding:5px 11px;font-size:11px;border-radius:7px}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--card-bg);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid rgba(200,128,60,.10);position:relative;overflow:hidden}
+  .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+  .stat-card.green::after{background:var(--leaf)}.stat-card.gold::after{background:var(--gold)}.stat-card.brown::after{background:var(--tuber)}.stat-card.dark::after{background:var(--earth)}
+  .stat-icon{font-size:24px;margin-bottom:8px;display:block}
+  .stat-value{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--earth);line-height:1;margin-bottom:3px}
+  .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .stat-change{font-size:11px;margin-top:5px;font-weight:600}
+  .stat-change.up{color:var(--leaf)}.stat-change.down{color:var(--danger)}
+
+  /* LAYOUT */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+  .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px}
+  .card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(200,128,60,.08);overflow:hidden}
+  .card-header{padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(44,24,16,.06)}
+  .card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--earth)}
+  .card-body{padding:16px 20px}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:600;padding:8px 10px;text-align:left;border-bottom:1.5px solid rgba(44,24,16,.08)}
+  tbody tr{transition:background .15s}
+  tbody tr:hover{background:rgba(200,128,60,.04)}
+  tbody td{padding:10px 10px;font-size:13px;color:var(--text);border-bottom:1px solid rgba(44,24,16,.04)}
+  .td-bold{font-weight:600}
+
+  /* BADGES */
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .badge-pending{background:rgba(232,168,75,.15);color:#9A6C10}
+  .badge-delivered{background:rgba(61,107,53,.15);color:var(--leaf)}
+  .badge-cancelled{background:rgba(192,57,43,.12);color:var(--danger)}
+  .badge-processing{background:rgba(200,128,60,.15);color:var(--soil)}
+
+  /* CHARTS */
+  .chart-bar-wrap{display:flex;flex-direction:column;gap:9px}
+  .chart-row{display:flex;align-items:center;gap:9px}
+  .chart-label{width:76px;color:var(--muted);font-size:11px;text-align:right}
+  .chart-bar-bg{flex:1;height:24px;background:rgba(44,24,16,.06);border-radius:7px;overflow:hidden}
+  .chart-bar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--tuber),var(--gold));transition:width .7s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding-left:7px;font-size:10px;font-weight:700;color:#fff}
+  .chart-val{font-size:10px;font-weight:700;color:var(--earth);width:72px;text-align:right}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(44,24,16,.55);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--cream);border-radius:20px;padding:28px;width:520px;box-shadow:0 20px 60px rgba(44,24,16,.25);animation:slideUp .3s ease;max-height:90vh;overflow-y:auto}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:16px;color:var(--earth)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  input,select,textarea{padding:10px 12px;border:1.5px solid rgba(44,24,16,.15);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:#fff;transition:border-color .2s;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--tuber);box-shadow:0 0 0 3px rgba(200,128,60,.12)}
+  textarea{resize:vertical;min-height:68px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+  /* MINI STATS */
+  .mini-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .mini-stat{background:var(--card-bg);border-radius:12px;padding:10px 15px;font-size:12px;color:var(--muted);border:1px solid rgba(200,128,60,.08);box-shadow:var(--shadow)}
+  .mini-stat strong{color:var(--earth);font-size:14px}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+  .search-box{flex:1;position:relative}
+  .search-box input{width:100%;padding-left:34px}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted)}
+
+  /* INV BAR */
+  .inv-bar{height:6px;background:rgba(44,24,16,.08);border-radius:3px;overflow:hidden;margin-top:4px}
+  .inv-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--leaf-light),var(--leaf))}
+  .inv-fill.low{background:linear-gradient(90deg,#e74c3c,#c0392b)}
+
+  /* REV CARD */
+  .rev-card{background:linear-gradient(135deg,var(--earth) 0%,var(--soil) 100%);border-radius:var(--radius);padding:24px;color:#fff;position:relative;overflow:hidden}
+  .rev-card::before{content:'🥔';position:absolute;right:-10px;bottom:-15px;font-size:88px;opacity:.08;transform:rotate(15deg)}
+  .rev-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5)}
+  .rev-amount{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--gold);line-height:1.1;margin:4px 0}
+  .rev-period{font-size:12px;color:rgba(255,255,255,.5)}
+  .rev-breakdown{display:flex;gap:18px;margin-top:16px}
+  .rev-item-label{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:2px}
+  .rev-item-val{font-size:16px;font-weight:700;color:#fff}
+
+  /* ACTIVITY */
+  .activity-feed{display:flex;flex-direction:column;gap:0}
+  .act-item{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid rgba(44,24,16,.05)}
+  .act-item:last-child{border-bottom:none}
+  .act-text{font-size:12px;color:var(--text);line-height:1.5;flex:1}
+  .act-time{font-size:10px;color:var(--muted);flex-shrink:0}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--earth);color:var(--cream);padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(44,24,16,.3);display:none;z-index:9999;border-left:4px solid var(--gold);max-width:300px}
+  .toast.show{display:block;animation:toastIn .3s ease}
+  @keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+  /* LOADING */
+  .load-overlay{position:fixed;inset:0;background:rgba(253,246,227,.88);z-index:8000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+  .load-overlay.hidden{display:none}
+  .spinner{width:38px;height:38px;border:3px solid rgba(200,128,60,.2);border-top-color:var(--tuber);border-radius:50%;animation:spin .8s linear infinite}
+  .load-text{font-size:13px;color:var(--muted);font-weight:500}
+
+  /* EMPTY */
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty-state .big{font-size:42px;display:block;margin-bottom:8px}
+  .empty-state p{font-size:13px}
+
+  @media(max-width:1100px){.stats-grid{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🥔</div>
+    <div class="login-title">ViaziBora</div>
+    <div class="login-sub">Best Potatoes · Potato Sales Manager</div>
+    <div class="login-owners">
+      <div class="login-divider">Who's logging in?</div>
+      <button class="owner-btn" onclick="login('Andrew')">
+        <div class="ov" style="background:var(--tuber)">AM</div>
+        <div><div class="ob-name">Andrew Mwachaka</div><div class="ob-role">Co-Owner</div></div>
+      </button>
+      <button class="owner-btn" onclick="login('Faith')">
+        <div class="ov" style="background:var(--leaf)">FC</div>
+        <div><div class="ob-name">Faith Chelagat</div><div class="ob-role">Co-Owner</div></div>
+      </button>
+    </div>
+    <div class="sync-badge">☁️ Live cloud sync — both owners share the same data</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="load-overlay hidden" id="load-overlay">
+  <div class="spinner"></div>
+  <div class="load-text" id="load-text">Loading ViaziBora...</div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar" style="display:none">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">🥔</div>
+      <div><div class="logo-text">ViaziBora</div><div class="logo-sub">Potato Manager</div></div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('orders')"><span class="nav-icon">📦</span> Orders</div>
+    <div class="nav-item" onclick="showPage('sales')"><span class="nav-icon">💰</span> Sales</div>
+    <div class="nav-item" onclick="showPage('inventory')"><span class="nav-icon">🌾</span> Inventory</div>
+    <div class="nav-item" onclick="showPage('customers')"><span class="nav-icon">👥</span> Customers</div>
+    <div class="nav-item" onclick="showPage('reports')"><span class="nav-icon">📈</span> Reports</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="cu-badge">
+      <div class="cu-av" id="cu-av" style="background:var(--tuber)">AM</div>
+      <div><div class="cu-name" id="cu-name">—</div><div class="cu-role">Co-Owner · Online</div></div>
+    </div>
+    <div class="sync-row"><div class="sdot" id="sdot"></div><span id="slabel">Synced</span></div>
+    <button class="btn-logout" onclick="logout()">↩ Switch User</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main" id="main" style="display:none">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="dash-greeting">Welcome! 🌤️</div>
+        <div class="page-subtitle" id="dash-date">ViaziBora Dashboard</div>
+      </div>
+      <div class="header-actions">
+        <a href="viazibora-order.html" target="_blank" class="btn btn-outline" style="text-decoration:none">🌐 Customer Portal</a>
+        <button class="btn btn-outline" onclick="syncAll(true)">☁️ Sync Now</button>
+        <button class="btn btn-primary" onclick="openModal('order-modal')">+ New Order</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card green"><span class="stat-icon">💵</span><div class="stat-value" id="st-rev">KSh 0</div><div class="stat-label">Total Revenue</div><div class="stat-change up" id="st-rev2">—</div></div>
+      <div class="stat-card gold"><span class="stat-icon">📦</span><div class="stat-value" id="st-ord">0</div><div class="stat-label">Total Orders</div><div class="stat-change up" id="st-ord2">—</div></div>
+      <div class="stat-card brown"><span class="stat-icon">🌾</span><div class="stat-value" id="st-stk">0 kg</div><div class="stat-label">Stock Remaining</div><div class="stat-change" id="st-stk2">—</div></div>
+      <div class="stat-card dark" style="cursor:pointer" onclick="showPage('orders')"><span class="stat-icon">🌐</span><div class="stat-value" id="st-web">0</div><div class="stat-label">Web Orders</div><div class="stat-change up" id="st-web2">From customer portal</div></div>
+    </div>
+    <div class="grid-3">
+      <div>
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><span class="card-title">Recent Orders</span><button class="btn btn-outline btn-sm" onclick="showPage('orders')">View All</button></div>
+          <div class="card-body" style="padding:0"><table><thead><tr><th>Order</th><th>Customer</th><th>Qty</th><th>Amount</th><th>Status</th></tr></thead><tbody id="dash-orders"><tr><td colspan="5" style="text-align:center;padding:18px;color:#7A6355">No orders yet</td></tr></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Monthly Sales</span></div>
+          <div class="card-body" id="monthly-chart"><div style="color:var(--muted);font-size:13px">Add sales to see chart</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="rev-card" style="margin-bottom:16px">
+          <div class="rev-label">This Month's Revenue</div>
+          <div class="rev-amount" id="mth-rev">KSh 0</div>
+          <div class="rev-period" id="mth-lbl">—</div>
+          <hr style="border-color:rgba(255,255,255,.1);margin:13px 0">
+          <div class="rev-breakdown">
+            <div class="rev-item"><div class="rev-item-label">Andrew</div><div class="rev-item-val" id="a-rev">0%</div></div>
+            <div class="rev-item"><div class="rev-item-label">Faith</div><div class="rev-item-val" id="f-rev">0%</div></div>
+            <div class="rev-item"><div class="rev-item-label">Orders</div><div class="rev-item-val" id="mth-ord">0</div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span class="card-title">Stock Alerts</span></div>
+          <div class="card-body" id="stk-alerts"><div style="color:var(--muted);font-size:13px">No inventory</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent Activity</span></div>
+          <div class="card-body" style="padding:10px 16px"><div class="activity-feed" id="act-feed"><div style="color:var(--muted);font-size:12px">No activity yet</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="page" id="page-orders">
+    <div class="page-header">
+      <div><div class="page-title">Orders 📦</div><div class="page-subtitle">Track and manage all customer orders</div></div>
+      <button class="btn btn-primary" onclick="openModal('order-modal')">+ New Order</button>
+    </div>
+    <div class="toolbar">
+      <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Search orders..." oninput="filterOrders(this.value)"></div>
+      <select onchange="filterOrdersByStatus(this.value)" style="width:148px">
+        <option value="">All Statuses</option><option>Pending</option><option>Processing</option><option>Delivered</option><option>Cancelled</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <table><thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Variety</th><th>Qty</th><th>Price/kg</th><th>Total</th><th>Date</th><th>Status</th><th>By</th><th>Actions</th></tr></thead>
+        <tbody id="ord-tbody"><tr><td colspan="11"><div class="empty-state"><span class="big">📦</span><p>No orders yet.</p></div></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SALES -->
+  <div class="page" id="page-sales">
+    <div class="page-header">
+      <div><div class="page-title">Sales 💰</div><div class="page-subtitle">Record and track all sales transactions</div></div>
+      <button class="btn btn-success" onclick="openModal('sale-modal')">+ Record Sale</button>
+    </div>
+    <div class="mini-stats">
+      <div class="mini-stat">Total: <strong id="ms-tot">KSh 0</strong></div>
+      <div class="mini-stat">This Week: <strong id="ms-wk">KSh 0</strong></div>
+      <div class="mini-stat">This Month: <strong id="ms-mn">KSh 0</strong></div>
+      <div class="mini-stat">Avg per Sale: <strong id="ms-av">KSh 0</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <table><thead><tr><th>ID</th><th>Customer</th><th>Variety</th><th>Qty</th><th>Price/kg</th><th>Total</th><th>Payment</th><th>Date</th><th>By</th><th>Actions</th></tr></thead>
+        <tbody id="sal-tbody"><tr><td colspan="10"><div class="empty-state"><span class="big">💰</span><p>No sales yet.</p></div></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div class="page" id="page-inventory">
+    <div class="page-header">
+      <div><div class="page-title">Inventory 🌾</div><div class="page-subtitle">Manage potato stock and varieties</div></div>
+      <button class="btn btn-primary" onclick="openModal('inv-modal')">+ Add Stock</button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Current Stock Levels</span></div>
+        <div class="card-body" style="padding:0">
+          <table><thead><tr><th>Variety</th><th>In Stock</th><th>Reorder Level</th><th>Price/kg</th><th>Supplier</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="inv-tbody"><tr><td colspan="7"><div class="empty-state"><span class="big">🌾</span><p>No inventory yet.</p></div></td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Stock Visualisation</span></div>
+        <div class="card-body" id="inv-chart"><div style="color:var(--muted);font-size:13px">Add inventory to see chart</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="page" id="page-customers">
+    <div class="page-header">
+      <div><div class="page-title">Customers 👥</div><div class="page-subtitle">Manage your customer base</div></div>
+      <button class="btn btn-primary" onclick="openModal('cust-modal')">+ Add Customer</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <table><thead><tr><th>Name</th><th>Phone</th><th>Location</th><th>Orders</th><th>Total Spent</th><th>Last Order</th><th>Actions</th></tr></thead>
+        <tbody id="cus-tbody"><tr><td colspan="7"><div class="empty-state"><span class="big">👥</span><p>No customers yet.</p></div></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="page" id="page-reports">
+    <div class="page-header">
+      <div><div class="page-title">Reports 📈</div><div class="page-subtitle">Business insights for Andrew &amp; Faith</div></div>
+      <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><span class="card-title">Sales by Variety</span></div><div class="card-body" id="var-chart"><div style="color:var(--muted);font-size:13px">No data yet</div></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Payment Methods</span></div><div class="card-body" id="pay-chart"><div style="color:var(--muted);font-size:13px">No data yet</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">6-Month Performance</span></div>
+      <div class="card-body" id="perf-table"><div style="color:var(--muted);font-size:13px">Add sales data to generate summary.</div></div>
+    </div>
+  </div>
+</main>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal">
+    <div class="modal-title">📦 New Order</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Customer Name</label><input id="o-cust" placeholder="e.g. John Kamau" list="cdl"><datalist id="cdl"></datalist></div>
+      <div class="form-group"><label>Phone</label><input id="o-phone" placeholder="07xx xxx xxx" type="tel"></div>
+      <div class="form-group"><label>Potato Variety</label><select id="o-var"><option value="">Select...</option><option>Shangi</option><option>Dutch Robijn</option><option>Tigoni</option><option>Kenya Baraka</option><option>Asante</option><option>Markies</option><option>Mixed</option></select></div>
+      <div class="form-group"><label>Quantity (kg)</label><input id="o-qty" type="number" placeholder="e.g. 100" min="1"></div>
+      <div class="form-group"><label>Price per kg (KSh)</label><input id="o-price" type="number" placeholder="e.g. 45" min="1"></div>
+      <div class="form-group"><label>Delivery Date</label><input id="o-date" type="date"></div>
+      <div class="form-group"><label>Status</label><select id="o-status"><option>Pending</option><option>Processing</option><option>Delivered</option><option>Cancelled</option></select></div>
+      <div class="form-group"><label>Assigned To</label><select id="o-owner"><option>Andrew Mwachaka</option><option>Faith Chelagat</option><option>Both</option></select></div>
+      <div class="form-group full"><label>Notes</label><textarea id="o-notes" placeholder="Delivery address, special instructions..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('order-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- SALE MODAL -->
+<div class="modal-overlay" id="sale-modal">
+  <div class="modal">
+    <div class="modal-title">💰 Record Sale</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Customer</label><input id="s-cust" placeholder="Customer name" list="cdls"><datalist id="cdls"></datalist></div>
+      <div class="form-group"><label>Potato Variety</label><select id="s-var"><option value="">Select...</option><option>Shangi</option><option>Dutch Robijn</option><option>Tigoni</option><option>Kenya Baraka</option><option>Asante</option><option>Markies</option><option>Mixed</option></select></div>
+      <div class="form-group"><label>Quantity (kg)</label><input id="s-qty" type="number" placeholder="kg sold" min="1"></div>
+      <div class="form-group"><label>Price per kg (KSh)</label><input id="s-price" type="number" placeholder="e.g. 45" min="1"></div>
+      <div class="form-group"><label>Payment Method</label><select id="s-pay"><option>M-Pesa</option><option>Cash</option><option>Bank Transfer</option><option>Credit</option></select></div>
+      <div class="form-group"><label>Sale Date</label><input id="s-date" type="date"></div>
+      <div class="form-group"><label>Recorded By</label><select id="s-owner"><option>Andrew Mwachaka</option><option>Faith Chelagat</option></select></div>
+      <div class="form-group"><label>Ref / Receipt No.</label><input id="s-ref" placeholder="e.g. MPesa Ref #"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('sale-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="saveSale()">Record Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTORY MODAL -->
+<div class="modal-overlay" id="inv-modal">
+  <div class="modal">
+    <div class="modal-title">🌾 Add / Update Stock</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Variety Name</label><input id="i-var" placeholder="e.g. Shangi"></div>
+      <div class="form-group"><label>Quantity (kg)</label><input id="i-qty" type="number" placeholder="e.g. 500" min="0"></div>
+      <div class="form-group"><label>Reorder Level (kg)</label><input id="i-reorder" type="number" placeholder="e.g. 100" min="0"></div>
+      <div class="form-group"><label>Selling Price / kg (KSh)</label><input id="i-price" type="number" placeholder="e.g. 45" min="0"></div>
+      <div class="form-group"><label>Supplier</label><input id="i-sup" placeholder="Supplier name"></div>
+      <div class="form-group"><label>Last Restocked</label><input id="i-date" type="date"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('inv-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInventory()">Save Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER MODAL -->
+<div class="modal-overlay" id="cust-modal">
+  <div class="modal">
+    <div class="modal-title">👥 Add Customer</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Full Name</label><input id="c-name" placeholder="Customer full name"></div>
+      <div class="form-group"><label>Phone</label><input id="c-phone" type="tel" placeholder="07xx xxx xxx"></div>
+      <div class="form-group full"><label>Location / Area</label><input id="c-loc" placeholder="e.g. Nakuru, Nyahururu Market"></div>
+      <div class="form-group full"><label>Notes</label><textarea id="c-notes" placeholder="Any notes about this customer..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('cust-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  VIAZIBORA — Cloud Synced via window.storage (shared=true)
+//  Falls back to localStorage when storage not available
+// ============================================================
+
+let USER = null;
+let DB = { orders:[], sales:[], inventory:[], customers:[], activity:[] };
+let syncTimer = null;
+const KEYS = { orders:'vb:orders', sales:'vb:sales', inventory:'vb:inventory', customers:'vb:customers', activity:'vb:activity' };
+
+// ---- STORAGE ----
+async function cGet(key) {
+  try {
+    if (window.storage) { const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : null; }
+  } catch(e) {}
+  try { return JSON.parse(localStorage.getItem(key)); } catch(e) { return null; }
+}
+async function cSet(key, val) {
+  try {
+    if (window.storage) { await window.storage.set(key, JSON.stringify(val), true); return; }
+  } catch(e) {}
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+async function loadAll() {
+  setSS('syncing','Syncing...');
+  try {
+    const [o,s,i,c,a] = await Promise.all([cGet(KEYS.orders),cGet(KEYS.sales),cGet(KEYS.inventory),cGet(KEYS.customers),cGet(KEYS.activity)]);
+    DB.orders    = o||[]; DB.sales   = s||[]; DB.inventory = i||[];
+    DB.customers = c||[]; DB.activity = a||[];
+    setSS('ok','Synced ✓');
+  } catch(e) { setSS('error','Sync error'); }
+}
+async function save(key, data) {
+  setSS('syncing','Saving...');
+  try { await cSet(key,data); setSS('ok','Saved ✓'); setTimeout(()=>setSS('ok','Synced'),1600); }
+  catch(e) { setSS('error','Save failed'); }
+}
+
+async function syncAll(showToast) {
+  await loadAll(); renderCurrentPage();
+  if (showToast) toast('Data synced from cloud ☁️');
+}
+function setSS(st,lbl) {
+  const d=document.getElementById('sdot'), l=document.getElementById('slabel');
+  if(!d)return;
+  d.className='sdot'+(st==='syncing'?' syncing':st==='error'?' error':'');
+  if(l)l.textContent=lbl;
+}
+
+// ---- HELPERS ----
+const nextId = arr => arr.length>0 ? Math.max(...arr.map(x=>x.id||0))+1 : 1001;
+const fmt  = n => 'KSh '+Number(n||0).toLocaleString('en-KE');
+const fmtD = d => d ? new Date(d).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+const ago  = iso => { const s=Math.floor((Date.now()-new Date(iso))/1000); if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
+const sbadge = s => { const m={Pending:'badge-pending',Delivered:'badge-delivered',Cancelled:'badge-cancelled',Processing:'badge-processing'}; return `<span class="badge ${m[s]||'badge-pending'}">${s}</span>`; };
+
+function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent='✓ '+msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+function logAct(icon,text){DB.activity.unshift({icon,text,time:new Date().toISOString()});if(DB.activity.length>40)DB.activity=DB.activity.slice(0,40);save(KEYS.activity,DB.activity);}
+
+function updateDL(){const names=DB.customers.map(c=>c.name);['cdl','cdls'].forEach(id=>{const dl=document.getElementById(id);if(dl)dl.innerHTML=names.map(n=>`<option value="${n}">`).join('')});}
+
+// ---- AUTH ----
+function login(who){
+  USER=who;
+  const full=who==='Andrew'?'Andrew Mwachaka':'Faith Chelagat';
+  const init=who==='Andrew'?'AM':'FC';
+  const col=who==='Andrew'?'var(--tuber)':'var(--leaf)';
+  document.getElementById('cu-name').textContent=full;
+  document.getElementById('cu-av').textContent=init;
+  document.getElementById('cu-av').style.background=col;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('load-overlay').classList.remove('hidden');
+  loadAll().then(()=>{
+    document.getElementById('load-overlay').classList.add('hidden');
+    document.getElementById('sidebar').style.display='flex';
+    document.getElementById('main').style.display='block';
+    renderDashboard(); updateDL();
+    if(syncTimer)clearInterval(syncTimer);
+    syncTimer=setInterval(()=>syncAll(false),30000);
+  });
+}
+function logout(){USER=null;if(syncTimer)clearInterval(syncTimer);document.getElementById('sidebar').style.display='none';document.getElementById('main').style.display='none';document.getElementById('login-screen').style.display='flex';}
+
+// ---- NAVIGATION ----
+let curPage='dashboard';
+function showPage(p){
+  curPage=p;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x=>{if(x.textContent.trim().toLowerCase().startsWith(p))x.classList.add('active');});
+  renderPage(p);
+}
+function renderCurrentPage(){renderPage(curPage);}
+function renderPage(p){({dashboard:renderDashboard,orders:renderOrders,sales:renderSales,inventory:renderInventory,customers:renderCustomers,reports:renderReports})[p]?.();}
+
+// ---- MODALS ----
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  const today=new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#'+id+' input[type=date]').forEach(d=>{if(!d.value)d.value=today;});
+  const full=USER==='Andrew'?'Andrew Mwachaka':'Faith Chelagat';
+  document.querySelectorAll('#'+id+' select[id$="-owner"]').forEach(s=>{for(let o of s.options){if(o.value===full){s.value=full;break;}}});
+  updateDL();
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.querySelectorAll('#'+id+' input,#'+id+' textarea').forEach(e=>e.value='');}
+
+// ================================================================
+// ORDERS
+// ================================================================
+async function saveOrder(){
+  const cust=document.getElementById('o-cust').value.trim(),phone=document.getElementById('o-phone').value.trim(),
+    v=document.getElementById('o-var').value,qty=parseFloat(document.getElementById('o-qty').value),
+    price=parseFloat(document.getElementById('o-price').value),date=document.getElementById('o-date').value,
+    status=document.getElementById('o-status').value,owner=document.getElementById('o-owner').value,
+    notes=document.getElementById('o-notes').value.trim();
+  if(!cust||!v||!qty||!price){alert('Please fill all required fields.');return;}
+  const o={id:nextId(DB.orders),customer:cust,phone,variety:v,qty,price,total:qty*price,date,status,owner,notes,createdBy:USER,createdAt:new Date().toISOString()};
+  DB.orders.unshift(o);
+  if(!DB.customers.find(c=>c.name.toLowerCase()===cust.toLowerCase())){DB.customers.push({id:nextId(DB.customers),name:cust,phone,location:'',notes:'',addedAt:new Date().toISOString()});await save(KEYS.customers,DB.customers);}
+  await save(KEYS.orders,DB.orders);
+  logAct('📦',`Order #${o.id} from ${cust} — ${qty}kg ${v}`);
+  closeModal('order-modal'); renderDashboard(); updateDL();
+  toast(`Order #${o.id} saved! ${fmt(o.total)}`);
+}
+async function deleteOrder(id){if(!confirm('Delete this order?'))return;DB.orders=DB.orders.filter(x=>x.id!==id);await save(KEYS.orders,DB.orders);renderOrders();renderDashboard();toast('Order deleted.');}
+async function updateOrderStatus(id,status){const o=DB.orders.find(x=>x.id===id);if(!o)return;o.status=status;await save(KEYS.orders,DB.orders);logAct('🔄',`Order #${id} → ${status}`);renderOrders();renderDashboard();toast('Status: '+status);}
+
+function renderOrders(data){
+  const rows=data||DB.orders, tbody=document.getElementById('ord-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty-state"><span class="big">📦</span><p>No orders yet.</p></div></td></tr>';return;}
+  tbody.innerHTML=rows.map(o=>`<tr>
+    <td class="td-bold">#${o.id}</td><td>${o.customer}</td><td>${o.phone||'—'}</td><td>${o.variety}</td>
+    <td>${o.qty}kg</td><td>${fmt(o.price)}</td><td class="td-bold">${fmt(o.total)}</td>
+    <td>${fmtD(o.date)}</td><td>${sbadge(o.status)}</td>
+    <td style="font-size:11px">${o.source==='customer-portal'?'<span style="background:rgba(61,107,53,.15);color:var(--leaf);font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px">🌐 Web</span>':'<span style="color:var(--muted)">'+(o.createdBy||'—').slice(0,6)+'</span>'}</td>
+    <td style="display:flex;gap:4px">
+      <select onchange="updateOrderStatus(${o.id},this.value)" style="font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid #ddd;cursor:pointer">
+        ${['Pending','Processing','Delivered','Cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">🗑</button>
+    </td></tr>`).join('');
+}
+function filterOrders(q){renderOrders(DB.orders.filter(o=>o.customer.toLowerCase().includes(q.toLowerCase())||String(o.id).includes(q)||o.variety.toLowerCase().includes(q.toLowerCase())));}
+function filterOrdersByStatus(s){renderOrders(s?DB.orders.filter(o=>o.status===s):DB.orders);}
+
+// ================================================================
+// SALES
+// ================================================================
+async function saveSale(){
+  const cust=document.getElementById('s-cust').value.trim(),v=document.getElementById('s-var').value,
+    qty=parseFloat(document.getElementById('s-qty').value),price=parseFloat(document.getElementById('s-price').value),
+    pay=document.getElementById('s-pay').value,date=document.getElementById('s-date').value,
+    owner=document.getElementById('s-owner').value,ref=document.getElementById('s-ref').value.trim();
+  if(!cust||!v||!qty||!price){alert('Please fill all required fields.');return;}
+  const s={id:nextId(DB.sales),customer:cust,variety:v,qty,price,total:qty*price,payment:pay,date,owner,ref,createdBy:USER,createdAt:new Date().toISOString()};
+  DB.sales.unshift(s);
+  const inv=DB.inventory.find(i=>i.variety.toLowerCase()===v.toLowerCase());
+  if(inv){inv.qty=Math.max(0,inv.qty-qty);}
+  if(!DB.customers.find(c=>c.name.toLowerCase()===cust.toLowerCase())){DB.customers.push({id:nextId(DB.customers),name:cust,phone:'',location:'',notes:'',addedAt:new Date().toISOString()});await save(KEYS.customers,DB.customers);}
+  await Promise.all([save(KEYS.sales,DB.sales),save(KEYS.inventory,DB.inventory)]);
+  logAct('💰',`${owner.split(' ')[0]} sold ${qty}kg ${v} to ${cust} — ${fmt(s.total)} via ${pay}`);
+  closeModal('sale-modal'); renderSales(); renderDashboard(); renderInventory(); updateDL();
+  toast(`Sale #${s.id} recorded! ${fmt(s.total)}`);
+}
+async function deleteSale(id){if(!confirm('Delete this sale?'))return;DB.sales=DB.sales.filter(x=>x.id!==id);await save(KEYS.sales,DB.sales);renderSales();renderDashboard();toast('Sale deleted.');}
+
+function renderSales(){
+  const tbody=document.getElementById('sal-tbody');
+  if(!DB.sales.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><span class="big">💰</span><p>No sales yet.</p></div></td></tr>';}
+  else{tbody.innerHTML=DB.sales.map(s=>`<tr>
+    <td class="td-bold">#${s.id}</td><td>${s.customer}</td><td>${s.variety}</td>
+    <td>${s.qty}kg</td><td>${fmt(s.price)}</td><td class="td-bold">${fmt(s.total)}</td>
+    <td><span class="badge" style="background:rgba(61,107,53,.12);color:var(--leaf)">${s.payment}</span></td>
+    <td>${fmtD(s.date)}</td><td style="font-size:11px">${s.owner.split(' ')[0]}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteSale(${s.id})">🗑</button></td></tr>`).join('');}
+  const tot=DB.sales.reduce((a,x)=>a+x.total,0);
+  const now=new Date(),wa=new Date(now-7*864e5);
+  const wk=DB.sales.filter(s=>new Date(s.date)>=wa).reduce((a,x)=>a+x.total,0);
+  const mn=DB.sales.filter(s=>{const d=new Date(s.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((a,x)=>a+x.total,0);
+  document.getElementById('ms-tot').textContent=fmt(tot);
+  document.getElementById('ms-wk').textContent=fmt(wk);
+  document.getElementById('ms-mn').textContent=fmt(mn);
+  document.getElementById('ms-av').textContent=fmt(Math.round(DB.sales.length?tot/DB.sales.length:0));
+}
+
+// ================================================================
+// INVENTORY
+// ================================================================
+async function saveInventory(){
+  const v=document.getElementById('i-var').value.trim(),qty=parseFloat(document.getElementById('i-qty').value),
+    reorder=parseFloat(document.getElementById('i-reorder').value)||50,price=parseFloat(document.getElementById('i-price').value)||0,
+    sup=document.getElementById('i-sup').value.trim(),date=document.getElementById('i-date').value;
+  if(!v||isNaN(qty)){alert('Please enter variety name and quantity.');return;}
+  const ex=DB.inventory.find(i=>i.variety.toLowerCase()===v.toLowerCase());
+  if(ex){ex.qty+=qty;ex.price=price||ex.price;ex.reorder=reorder;ex.supplier=sup||ex.supplier;ex.lastRestocked=date;toast(`Updated: ${v} now ${ex.qty}kg`);}
+  else{DB.inventory.push({id:nextId(DB.inventory),variety:v,qty,reorder,price,supplier:sup,lastRestocked:date});toast(`Added: ${v} ${qty}kg`);}
+  await save(KEYS.inventory,DB.inventory);
+  logAct('🌾',`Stock ${ex?'updated':'added'}: ${v} — ${qty}kg`);
+  closeModal('inv-modal'); renderInventory(); renderDashboard();
+}
+async function deleteInventory(id){if(!confirm('Remove this item?'))return;DB.inventory=DB.inventory.filter(x=>x.id!==id);await save(KEYS.inventory,DB.inventory);renderInventory();renderDashboard();toast('Item removed.');}
+
+function renderInventory(){
+  const tbody=document.getElementById('inv-tbody');
+  if(!DB.inventory.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><span class="big">🌾</span><p>No inventory yet.</p></div></td></tr>';}
+  else{tbody.innerHTML=DB.inventory.map(i=>{
+    const pct=Math.min(100,(i.qty/(i.reorder*3))*100);
+    const st=i.qty<=0?'Out of Stock':i.qty<=i.reorder?'Low Stock':'In Stock';
+    const sc=i.qty<=0?'#C0392B':i.qty<=i.reorder?'#E8A84B':'var(--leaf)';
+    return `<tr><td class="td-bold">${i.variety}</td>
+      <td>${i.qty}kg<div class="inv-bar"><div class="inv-fill ${i.qty<=i.reorder?'low':''}" style="width:${pct}%"></div></div></td>
+      <td>${i.reorder}kg</td><td>${fmt(i.price)}</td><td style="font-size:12px">${i.supplier||'—'}</td>
+      <td><span style="font-size:11px;font-weight:700;color:${sc}">${st}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteInventory(${i.id})">🗑</button></td></tr>`;}).join('');}
+  const area=document.getElementById('inv-chart');
+  if(!DB.inventory.length){area.innerHTML='<div style="color:var(--muted);font-size:13px">Add inventory to see chart</div>';return;}
+  const mx=Math.max(...DB.inventory.map(i=>i.qty),1);
+  area.innerHTML='<div class="chart-bar-wrap">'+DB.inventory.map(i=>{const p=Math.round((i.qty/mx)*100),low=i.qty<=i.reorder;return `<div class="chart-row"><div class="chart-label">${i.variety.length>9?i.variety.slice(0,8)+'…':i.variety}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${p}%;${low?'background:linear-gradient(90deg,#e74c3c,#c0392b)':''}">${i.qty>30?i.qty+'kg':''}</div></div><div class="chart-val">${i.qty}kg</div></div>`;}).join('')+'</div>';
+}
+
+// ================================================================
+// CUSTOMERS
+// ================================================================
+async function saveCustomer(){
+  const name=document.getElementById('c-name').value.trim(),phone=document.getElementById('c-phone').value.trim(),
+    loc=document.getElementById('c-loc').value.trim(),notes=document.getElementById('c-notes').value.trim();
+  if(!name){alert('Please enter customer name.');return;}
+  if(DB.customers.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert('Customer already exists.');return;}
+  DB.customers.push({id:nextId(DB.customers),name,phone,location:loc,notes,addedAt:new Date().toISOString()});
+  await save(KEYS.customers,DB.customers);
+  closeModal('cust-modal'); renderCustomers(); renderDashboard(); updateDL();
+  toast(`Customer "${name}" added!`);
+}
+async function deleteCustomer(id){if(!confirm('Remove customer?'))return;DB.customers=DB.customers.filter(x=>x.id!==id);await save(KEYS.customers,DB.customers);renderCustomers();renderDashboard();toast('Customer removed.');}
+
+function renderCustomers(){
+  const tbody=document.getElementById('cus-tbody');
+  if(!DB.customers.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><span class="big">👥</span><p>No customers yet.</p></div></td></tr>';return;}
+  tbody.innerHTML=DB.customers.map(c=>{
+    const ords=DB.orders.filter(o=>o.customer.toLowerCase()===c.name.toLowerCase()).length;
+    const spent=DB.sales.filter(s=>s.customer.toLowerCase()===c.name.toLowerCase()).reduce((a,s)=>a+s.total,0);
+    const last=DB.orders.filter(o=>o.customer.toLowerCase()===c.name.toLowerCase()).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
+    return `<tr><td class="td-bold">${c.name}</td><td>${c.phone||'—'}</td><td>${c.location||'—'}</td><td>${ords}</td><td>${fmt(spent)}</td><td>${last?fmtD(last.date):'—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">🗑</button></td></tr>`;
+  }).join('');
+}
+
+// ================================================================
+// DASHBOARD
+// ================================================================
+function renderDashboard(){
+  const now=new Date();
+  const mns=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const h=now.getHours(),gr=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';
+  document.getElementById('dash-greeting').textContent=`${gr}, ${USER}! 👋`;
+  document.getElementById('dash-date').textContent=`${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()]}, ${now.getDate()} ${mns[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('mth-lbl').textContent=`${mns[now.getMonth()]} ${now.getFullYear()}`;
+
+  const totRev=DB.sales.reduce((a,s)=>a+s.total,0);
+  const mthSales=DB.sales.filter(s=>{const d=new Date(s.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const mthRev=mthSales.reduce((a,s)=>a+s.total,0);
+  const totStk=DB.inventory.reduce((a,i)=>a+i.qty,0);
+  const low=DB.inventory.filter(i=>i.qty<=i.reorder);
+
+  document.getElementById('st-rev').textContent=fmt(totRev);
+  document.getElementById('st-ord').textContent=DB.orders.length;
+  document.getElementById('st-stk').textContent=totStk+' kg';
+  document.getElementById('st-cus').textContent=DB.customers.length;
+  // Web orders
+  const webOrders=DB.orders.filter(o=>o.source==='customer-portal');
+  const pendingWeb=webOrders.filter(o=>o.status==='Pending');
+  document.getElementById('st-web').textContent=webOrders.length;
+  document.getElementById('st-web2').textContent=pendingWeb.length>0?`⚠ ${pendingWeb.length} pending action`:'All actioned';
+  document.getElementById('st-rev2').textContent=DB.sales.length?`↑ ${DB.sales.length} sale${DB.sales.length>1?'s':''} total`:'No sales yet';
+  document.getElementById('st-ord2').textContent=DB.orders.length?`↑ ${DB.orders.length} orders`:'No orders yet';
+  const se=document.getElementById('st-stk2');se.className='stat-change '+(low.length>0?'down':'up');se.textContent=low.length>0?`⚠ ${low.length} low stock`:'✓ Stock OK';
+  document.getElementById('mth-rev').textContent=fmt(mthRev);
+  document.getElementById('mth-ord').textContent=mthSales.length;
+  const av=mthSales.filter(s=>s.owner&&s.owner.includes('Andrew')).reduce((a,s)=>a+s.total,0);
+  const fv=mthSales.filter(s=>s.owner&&s.owner.includes('Faith')).reduce((a,s)=>a+s.total,0);
+  const t=av+fv||1;
+  document.getElementById('a-rev').textContent=Math.round(av/t*100)+'%';
+  document.getElementById('f-rev').textContent=Math.round(fv/t*100)+'%';
+
+  // Recent orders
+  const dt=document.getElementById('dash-orders');
+  const rec=DB.orders.slice(0,5);
+  dt.innerHTML=rec.length?rec.map(o=>`<tr><td class="td-bold">#${o.id}</td><td>${o.customer}</td><td>${o.qty}kg</td><td>${fmt(o.total)}</td><td>${sbadge(o.status)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:16px;color:#7A6355">No orders yet</td></tr>';
+
+  // Monthly chart
+  const cd=[];
+  const sn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const v=DB.sales.filter(s=>{const sd=new Date(s.date);return sd.getMonth()===d.getMonth()&&sd.getFullYear()===d.getFullYear();}).reduce((a,s)=>a+s.total,0);cd.push({month:sn[d.getMonth()],val:v});}
+  const mx=Math.max(...cd.map(d=>d.val),1);
+  const ce=document.getElementById('monthly-chart');
+  ce.innerHTML=cd.some(d=>d.val>0)?'<div class="chart-bar-wrap">'+cd.map(d=>`<div class="chart-row"><div class="chart-label">${d.month}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round((d.val/mx)*100)}%">${d.val>0?fmt(d.val).replace('KSh ',''):''}</div></div><div class="chart-val" style="font-size:10px">${fmt(d.val)}</div></div>`).join('')+'</div>':'<div style="color:var(--muted);font-size:13px">Add sales to see chart</div>';
+
+  // Stock alerts
+  document.getElementById('stk-alerts').innerHTML=low.length===0?'<div style="color:var(--leaf);font-size:13px;font-weight:600">✓ All stock levels healthy</div>':low.map(i=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(44,24,16,.05)"><span style="font-size:13px;font-weight:600">${i.variety}</span><span style="font-size:12px;color:#C0392B;font-weight:600">⚠ ${i.qty}kg</span></div>`).join('');
+
+  // Activity
+  document.getElementById('act-feed').innerHTML=DB.activity.length?DB.activity.slice(0,8).map(a=>`<div class="act-item"><span style="font-size:13px">${a.icon}</span><span class="act-text">${a.text}</span><span class="act-time">${ago(a.time)}</span></div>`).join(''):'<div style="color:var(--muted);font-size:12px">No activity yet</div>';
+}
+
+// ================================================================
+// REPORTS
+// ================================================================
+function renderReports(){
+  const vars={},pays={};
+  DB.sales.forEach(s=>{vars[s.variety]=(vars[s.variety]||0)+s.total;pays[s.payment]=(pays[s.payment]||0)+s.total;});
+  const mv=Math.max(...Object.values(vars),1),mp=Math.max(...Object.values(pays),1);
+  document.getElementById('var-chart').innerHTML=Object.keys(vars).length?'<div class="chart-bar-wrap">'+Object.entries(vars).sort((a,b)=>b[1]-a[1]).map(([v,val])=>`<div class="chart-row"><div class="chart-label">${v.length>9?v.slice(0,8)+'…':v}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round((val/mv)*100)}%">&nbsp;</div></div><div class="chart-val">${fmt(val)}</div></div>`).join('')+'</div>':'<div style="color:var(--muted);font-size:13px">No data yet</div>';
+  document.getElementById('pay-chart').innerHTML=Object.keys(pays).length?'<div class="chart-bar-wrap">'+Object.entries(pays).sort((a,b)=>b[1]-a[1]).map(([p,val])=>`<div class="chart-row"><div class="chart-label">${p}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round((val/mp)*100)}%;background:linear-gradient(90deg,var(--leaf),var(--leaf-light))">&nbsp;</div></div><div class="chart-val">${fmt(val)}</div></div>`).join('')+'</div>':'<div style="color:var(--muted);font-size:13px">No data yet</div>';
+  const now=new Date(),mn=['January','February','March','April','May','June','July','August','September','October','November','December'],perf=[];
+  for(let i=0;i<6;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const ms=DB.sales.filter(s=>{const sd=new Date(s.date);return sd.getMonth()===d.getMonth()&&sd.getFullYear()===d.getFullYear();});const mo=DB.orders.filter(o=>{const od=new Date(o.createdAt);return od.getMonth()===d.getMonth()&&od.getFullYear()===d.getFullYear();});perf.push({month:mn[d.getMonth()]+' '+d.getFullYear(),rev:ms.reduce((a,s)=>a+s.total,0),orders:mo.length,qty:ms.reduce((a,s)=>a+s.qty,0)});}
+  document.getElementById('perf-table').innerHTML=perf.some(p=>p.rev>0)?`<table><thead><tr><th>Month</th><th>Revenue</th><th>Orders</th><th>Qty Sold</th><th>Avg per Order</th></tr></thead><tbody>${perf.map(p=>`<tr><td class="td-bold">${p.month}</td><td>${fmt(p.rev)}</td><td>${p.orders}</td><td>${p.qty}kg</td><td>${p.orders?fmt(Math.round(p.rev/p.orders)):'—'}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--muted);font-size:13px">Add sales data to generate summary.</div>';
+}
+</script>
+</body>
+</html>
